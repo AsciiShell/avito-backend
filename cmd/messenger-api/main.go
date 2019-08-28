@@ -54,14 +54,14 @@ func main() {
 	r.Use(middleware.Timeout(cfg.HTTPTimeout))
 
 	r.Route("/", func(r chi.Router) {
-		r.Post("/users/add", handler.Hello)
+		r.Post("/users/add", handler.CreateUser)
 		r.Route("/chats", func(r chi.Router) {
-			r.Get("/get", handler.Hello)
-			r.Post("/add", handler.Hello)
+			r.Get("/get", handler.GetChats)
+			r.Post("/add", handler.CreateChat)
 		})
 		r.Route("/messages", func(r chi.Router) {
-			r.Get("/get", handler.Hello)
-			r.Post("/add", handler.Hello)
+			r.Get("/get", handler.GetMessages)
+			r.Post("/add", handler.CreateMessage)
 		})
 	})
 	if err := http.ListenAndServe(cfg.HTTPAddress, r); err != nil {

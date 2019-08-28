@@ -17,6 +17,18 @@ func NewHandler(l log.Logger, s storage.Storage) *Handler {
 	return &h
 }
 
-func (h Handler) Hello(w http.ResponseWriter, r *http.Request) {
+func (h Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "not implemented", http.StatusNotFound)
+}
+func (h Handler) CreateChat(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "not implemented", http.StatusNotFound)
+}
+func (h Handler) CreateMessage(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "not implemented", http.StatusNotFound)
+}
+func (h Handler) GetChats(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "not implemented", http.StatusNotFound)
+}
+func (h Handler) GetMessages(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "not implemented", http.StatusNotFound)
 }
