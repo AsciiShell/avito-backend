@@ -36,7 +36,7 @@ func loadConfig() config {
 }
 func main() {
 	cfg := loadConfig()
-	db, err := postgresqldb.NewPostgresGormStorage(cfg.DB)
+	db, err := postgresqldb.NewPostgresStorage(cfg.DB)
 	if err != nil {
 		log.New().Fatalf("can't use database:%s", err)
 	}

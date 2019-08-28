@@ -24,7 +24,7 @@ type DBCredential struct {
 	MigrateNum int
 }
 
-func NewPostgresGormStorage(credential DBCredential) (*PostgresStorage, error) {
+func NewPostgresStorage(credential DBCredential) (*PostgresStorage, error) {
 	var err error
 	var db *gorm.DB
 	logger := log.New()
