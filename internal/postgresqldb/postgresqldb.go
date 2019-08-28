@@ -13,15 +13,14 @@ type PostgresStorage struct {
 	DB *gorm.DB
 }
 
-func (p *PostgresStorage) Migrate(index int) error {
+func (p *PostgresStorage) Migrate() error {
 	panic("implement me")
 }
 
 type DBCredential struct {
-	URL        string
-	Debug      bool
-	Migrate    bool
-	MigrateNum int
+	URL     string
+	Debug   bool
+	Migrate bool
 }
 
 func NewPostgresStorage(credential DBCredential) (*PostgresStorage, error) {
@@ -38,9 +37,9 @@ func NewPostgresStorage(credential DBCredential) (*PostgresStorage, error) {
 	db.LogMode(credential.Debug)
 	result := PostgresStorage{DB: db}
 	if credential.Migrate {
-		if err := result.Migrate(credential.MigrateNum); err != nil {
+		if err := result.Migrate(); err != nil {
 			defer db.Close()
-			return nil, errors.Wrapf(err, "can't apply migration number %v", credential.MigrateNum)
+			return nil, errors.Wrapf(err, "can't apply migration")
 		}
 		logger.Info("Migration complete")
 	}
