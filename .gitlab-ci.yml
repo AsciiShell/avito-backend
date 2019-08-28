@@ -1,0 +1,28 @@
+stages:
+  - lint-and-test
+    
+variables:
+  # When using dind, it's wise to use the overlayfs driver for
+  # improved performance.
+  DOCKER_DRIVER: overlay2
+
+unit_tests:
+  image: golang:1.12
+  stage: lint-and-test
+  before_script:
+    - mkdir -p /go/src/github.com/asciishell/
+    - cp -r ../avito-backend /go/src/github.com/asciishell/
+    - cd /go/src/github.com/asciishell/avito-backend
+  script:
+    - make test
+  tags: [docker]
+
+lint:
+  image: golangci/golangci-lint:v1.17.1
+  before_script:
+    - mkdir -p /go/src/github.com/asciishell/
+    - cp -r ../avito-backend /go/src/github.com/asciishell/
+    - cd /go/src/github.com/asciishell/avito-backend
+  stage: lint-and-test
+  script: make lint
+  tags: [docker]
