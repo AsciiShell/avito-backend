@@ -53,8 +53,16 @@ func main() {
 	r.Use(middleware.Throttle(cfg.MaxRequests))
 	r.Use(middleware.Timeout(cfg.HTTPTimeout))
 
-	r.Route("/v1", func(r chi.Router) {
-		r.Get("/", handler.Hello)
+	r.Route("/", func(r chi.Router) {
+		r.Post("/users/add", handler.Hello)
+		r.Route("/chats", func(r chi.Router) {
+			r.Get("/get", handler.Hello)
+			r.Post("/add", handler.Hello)
+		})
+		r.Route("/messages", func(r chi.Router) {
+			r.Get("/get", handler.Hello)
+			r.Post("/add", handler.Hello)
+		})
 	})
 	if err := http.ListenAndServe(cfg.HTTPAddress, r); err != nil {
 		logger.Fatalf("server error:%s", err)
