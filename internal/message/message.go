@@ -1,6 +1,7 @@
 package message
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/asciishell/avito-backend/internal/chat"
@@ -15,4 +16,8 @@ type Message struct {
 	AuthorID  uint      `json:"-" gorm:"NOT NULL" sql:"type:integer REFERENCES users(id)"`
 	Text      string    `json:"text" gorm:"NOT NULL"`
 	CreatedAT time.Time `json:"created_at" gorm:"NOT NULL;DEFAULT:now()"`
+}
+
+func (m Message) ShortJSON() []byte {
+	return []byte(fmt.Sprintf("{\"id\": %v}", m.ID))
 }
