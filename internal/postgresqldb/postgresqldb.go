@@ -1,6 +1,8 @@
 package postgresqldb
 
 import (
+	"fmt"
+
 	"github.com/asciishell/avito-backend/internal/chat"
 	"github.com/asciishell/avito-backend/internal/message"
 	"github.com/asciishell/avito-backend/internal/user"
@@ -44,10 +46,35 @@ func NewPostgresStorage(credential DBCredential) (*PostgresStorage, error) {
 	}
 	return &result, nil
 }
+func (p *PostgresStorage) constraintExists(table string, constraint string) bool {
+	return p.DB.Exec(`SELECT 1 FROM pg_catalog.pg_constraint con
+         INNER JOIN pg_catalog.pg_class rel ON rel.oid = con.conrelid
+WHERE rel.relname = ? AND con.conname = ?;`, table, constraint).RowsAffected == 1
+}
 
 func (p *PostgresStorage) Migrate() error {
+	t := p.DB.Begin()
+	defer t.Commit()
 	if err := p.DB.AutoMigrate(user.User{}, chat.Chat{}, message.Message{}).Error; err != nil {
+		t.Rollback()
 		return errors.Wrapf(err, "can't migrate")
+	}
+	type constrain struct {
+		Table string
+		Name  string
+		Rule  string
+	}
+	constraints := []constrain{
+		{Table: "user_chats", Name: "user_chats_chat_id_fkey", Rule: "FOREIGN KEY (chat_id) REFERENCES chats ON DELETE RESTRICT"},
+		{Table: "user_chats", Name: "user_chats_user_id_fkey", Rule: "FOREIGN KEY (user_id) REFERENCES users ON DELETE RESTRICT"},
+	}
+	for _, v := range constraints {
+		if !p.constraintExists(v.Table, v.Name) {
+			if err := p.DB.Exec(fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT  %s %s", v.Table, v.Name, v.Rule)).Error; err != nil {
+				t.Rollback()
+				return errors.Wrapf(err, "can't apply constraint %s", v.Name)
+			}
+		}
 	}
 	return nil
 }
