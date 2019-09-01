@@ -16,13 +16,6 @@ type PostgresStorage struct {
 	DB *gorm.DB
 }
 
-func (p *PostgresStorage) Migrate() error {
-	if err := p.DB.AutoMigrate(user.User{}, chat.Chat{}, message.Message{}).Error; err != nil {
-		return errors.Wrapf(err, "can't migrate")
-	}
-	return nil
-}
-
 type DBCredential struct {
 	URL     string
 	Debug   bool
@@ -50,4 +43,35 @@ func NewPostgresStorage(credential DBCredential) (*PostgresStorage, error) {
 		logger.Info("Migration complete")
 	}
 	return &result, nil
+}
+
+func (p *PostgresStorage) Migrate() error {
+	if err := p.DB.AutoMigrate(user.User{}, chat.Chat{}, message.Message{}).Error; err != nil {
+		return errors.Wrapf(err, "can't migrate")
+	}
+	return nil
+}
+
+func (p *PostgresStorage) CreateUser(u *user.User) error {
+	panic("implement me")
+}
+
+func (p *PostgresStorage) GetUser(u *user.User) error {
+	panic("implement me")
+}
+
+func (p *PostgresStorage) CreateChat(c *chat.Chat) error {
+	panic("implement me")
+}
+
+func (p *PostgresStorage) CreateMessage(m *message.Message) error {
+	panic("implement me")
+}
+
+func (p *PostgresStorage) GetChatsFor(u user.User) ([]chat.Chat, error) {
+	panic("implement me")
+}
+
+func (p *PostgresStorage) GetMessages(c chat.Chat) ([]message.Message, error) {
+	panic("implement me")
 }
