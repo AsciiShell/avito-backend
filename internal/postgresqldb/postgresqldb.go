@@ -56,10 +56,14 @@ WHERE rel.relname = ? AND con.conname = ?;`, table, constraint).RowsAffected == 
 
 func (p *PostgresStorage) Migrate() error {
 	t := p.DB.Begin()
-	defer t.Commit()
-	if err := p.DB.AutoMigrate(user.User{}, chat.Chat{}, message.Message{}).Error; err != nil {
-		t.Rollback()
-		return errors.Wrapf(err, "can't migrate")
+	defer t.Rollback()
+	models := []interface{}{user.User{}, chat.Chat{}, message.Message{}}
+	for i := range models {
+		if !p.DB.HasTable(models[i]) {
+			if err := p.DB.AutoMigrate(models[i]).Error; err != nil {
+				return errors.Wrapf(err, "can't migrate")
+			}
+		}
 	}
 	type constrain struct {
 		Table string
@@ -73,11 +77,11 @@ func (p *PostgresStorage) Migrate() error {
 	for _, v := range constraints {
 		if !p.constraintExists(v.Table, v.Name) {
 			if err := p.DB.Exec(fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT  %s %s", v.Table, v.Name, v.Rule)).Error; err != nil {
-				t.Rollback()
 				return errors.Wrapf(err, "can't apply constraint %s", v.Name)
 			}
 		}
 	}
+	t.Commit()
 	return nil
 }
 
