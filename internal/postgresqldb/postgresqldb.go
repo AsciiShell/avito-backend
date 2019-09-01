@@ -1,6 +1,9 @@
 package postgresqldb
 
 import (
+	"github.com/asciishell/avito-backend/internal/chat"
+	"github.com/asciishell/avito-backend/internal/message"
+	"github.com/asciishell/avito-backend/internal/user"
 	"github.com/asciishell/avito-backend/pkg/log"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
@@ -11,10 +14,6 @@ import (
 
 type PostgresStorage struct {
 	DB *gorm.DB
-}
-
-func (p *PostgresStorage) Migrate() error {
-	panic("implement me")
 }
 
 type DBCredential struct {
@@ -44,4 +43,65 @@ func NewPostgresStorage(credential DBCredential) (*PostgresStorage, error) {
 		logger.Info("Migration complete")
 	}
 	return &result, nil
+}
+
+func (p *PostgresStorage) Migrate() error {
+	if err := p.DB.AutoMigrate(user.User{}, chat.Chat{}, message.Message{}).Error; err != nil {
+		return errors.Wrapf(err, "can't migrate")
+	}
+	return nil
+}
+
+func (p *PostgresStorage) CreateUser(u *user.User) error {
+	if err := p.DB.Create(u).Error; err != nil {
+		return errors.Wrapf(err, "can't create user %+v", u)
+	}
+	return nil
+}
+
+func (p *PostgresStorage) GetUser(u *user.User) error {
+	if err := p.DB.Where(u).First(u).Error; err != nil {
+		return errors.Wrapf(err, "can't get user %+v", u)
+	}
+	return nil
+}
+
+func (p *PostgresStorage) CreateChat(c *chat.Chat) error {
+	if err := p.DB.Create(c).Error; err != nil {
+		return errors.Wrapf(err, "can't create chat %+v", c)
+	}
+	return nil
+}
+
+func (p *PostgresStorage) CreateMessage(m *message.Message) error {
+	if err := p.DB.Create(m).Error; err != nil {
+		return errors.Wrapf(err, "can't create message %+v", m)
+	}
+	return nil
+}
+
+func (p *PostgresStorage) GetChatsFor(u user.User) ([]chat.Chat, error) {
+	var result []chat.Chat
+	if err := p.DB.Raw(`SELECT chats.id, chats.name, chats.created_at, (SELECT MAX(created_at) FROM messages WHERE messages.chat_id = chats.id) as last_message
+FROM chats
+         JOIN user_chats uc on chats.id = uc.chat_id
+WHERE uc.user_id = ?
+ORDER BY last_message DESC 
+`, u.ID).Scan(&result).Error; err != nil {
+		return nil, errors.Wrapf(err, "can't get chats for user id %v", u.ID)
+	}
+	return result, nil
+}
+
+func (p *PostgresStorage) GetMessages(c chat.Chat) ([]message.Message, error) {
+	var result []message.Message
+
+	if err := p.DB.Raw(`SELECT *
+FROM messages
+WHERE chat_id = ?
+ORDER BY created_at
+`, c.ID).Scan(&result).Error; err != nil {
+		return nil, errors.Wrapf(err, "can't read from row, chat id %v", c.ID)
+	}
+	return result, nil
 }
