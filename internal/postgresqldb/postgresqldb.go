@@ -18,6 +18,8 @@ type PostgresStorage struct {
 	DB *gorm.DB
 }
 
+var ErrNotFound = errors.New("record not found")
+
 type DBCredential struct {
 	URL     string
 	Debug   bool
@@ -108,6 +110,9 @@ func (p *PostgresStorage) CreateMessage(m *message.Message) error {
 }
 
 func (p *PostgresStorage) GetChatsFor(u user.User) ([]chat.Chat, error) {
+	if err := p.DB.Where(u).First(&u).Error; err != nil {
+		return nil, errors.Wrapf(ErrNotFound, "can't find user %v", u)
+	}
 	var result []chat.Chat
 	if err := p.DB.Raw(`SELECT chats.id, chats.name, chats.created_at, (SELECT MAX(created_at) FROM messages WHERE messages.chat_id = chats.id) as last_message
 FROM chats
@@ -121,8 +126,10 @@ ORDER BY last_message DESC
 }
 
 func (p *PostgresStorage) GetMessages(c chat.Chat) ([]message.Message, error) {
+	if err := p.DB.Where(c).First(&c).Error; err != nil {
+		return nil, errors.Wrapf(ErrNotFound, "can't find chat %v", c)
+	}
 	var result []message.Message
-
 	if err := p.DB.Raw(`SELECT *
 FROM messages
 WHERE chat_id = ?
