@@ -1,6 +1,9 @@
 package postgresqldb
 
 import (
+	"github.com/asciishell/avito-backend/internal/chat"
+	"github.com/asciishell/avito-backend/internal/message"
+	"github.com/asciishell/avito-backend/internal/user"
 	"github.com/asciishell/avito-backend/pkg/log"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
@@ -14,7 +17,10 @@ type PostgresStorage struct {
 }
 
 func (p *PostgresStorage) Migrate() error {
-	panic("implement me")
+	if err := p.DB.AutoMigrate(user.User{}, chat.Chat{}, message.Message{}).Error; err != nil {
+		return errors.Wrapf(err, "can't migrate")
+	}
+	return nil
 }
 
 type DBCredential struct {
