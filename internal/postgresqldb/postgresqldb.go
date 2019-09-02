@@ -123,14 +123,14 @@ func (p *PostgresStorage) CreateMessage(m *message.Message) error {
 
 func (p *PostgresStorage) GetChatsFor(u user.User) ([]chat.Chat, error) {
 	if err := p.DB.Where(u).First(&u).Error; err != nil {
-		return nil, errors.Wrapf(ErrNotFound, "can't find user %v", u)
+		return nil, ErrNotFound
 	}
 	var result []chat.Chat
 	if err := p.DB.Raw(`SELECT chats.id, chats.name, chats.created_at, (SELECT MAX(created_at) FROM messages WHERE messages.chat_id = chats.id) as last_message
 FROM chats
          JOIN user_chats uc on chats.id = uc.chat_id
 WHERE uc.user_id = ?
-ORDER BY last_message DESC 
+ORDER BY last_message DESC NULLS LAST
 `, u.ID).Scan(&result).Error; err != nil {
 		return nil, errors.Wrapf(err, "can't get chats for user id %v", u.ID)
 	}

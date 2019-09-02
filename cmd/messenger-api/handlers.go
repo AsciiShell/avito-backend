@@ -76,11 +76,12 @@ func (h Handler) CreateMessage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h Handler) GetChats(w http.ResponseWriter, r *http.Request) {
-	var userData user.User
-	if err := json.NewDecoder(r.Body).Decode(&userData); err != nil {
+	var userInfo user.CreationUser
+	if err := json.NewDecoder(r.Body).Decode(&userInfo); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	userData := userInfo.Convert()
 	chats, err := h.storage.GetChatsFor(userData)
 	if err != nil {
 		switch err {

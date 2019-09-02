@@ -55,11 +55,11 @@ func main() {
 	r.Route("/", func(r chi.Router) {
 		r.Post("/users/add", handler.CreateUser)
 		r.Route("/chats", func(r chi.Router) {
-			r.Get("/get", handler.GetChats)
+			r.Post("/get", handler.GetChats)
 			r.Post("/add", handler.CreateChat)
 		})
 		r.Route("/messages", func(r chi.Router) {
-			r.Get("/get", handler.GetMessages)
+			r.Post("/get", handler.GetMessages)
 			r.Post("/add", handler.CreateMessage)
 		})
 	})
