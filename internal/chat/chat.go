@@ -17,3 +17,19 @@ type Chat struct {
 func (c Chat) ShortJSON() []byte {
 	return []byte(fmt.Sprintf("{\"id\": %v}", c.ID))
 }
+
+type CreationChat struct {
+	Name  string `json:"name"`
+	Users []uint `json:"users"`
+}
+
+func (c CreationChat) Convert() Chat {
+	users := make([]user.User, 0, len(c.Users))
+	for i := range c.Users {
+		users = append(users, user.User{ID: c.Users[i]})
+	}
+	return Chat{
+		Name:  c.Name,
+		Users: users,
+	}
+}

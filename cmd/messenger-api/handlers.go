@@ -39,19 +39,20 @@ func (h Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h Handler) CreateChat(w http.ResponseWriter, r *http.Request) {
-	var chatData chat.Chat
-	if err := json.NewDecoder(r.Body).Decode(&chatData); err != nil {
+	var chatInfo chat.CreationChat
+	if err := json.NewDecoder(r.Body).Decode(&chatInfo); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	chatData := chatInfo.Convert()
 	if err := h.storage.CreateChat(&chatData); err != nil {
-		h.logger.Errorf("can't create chat: %+v", err)
+		h.logger.Errorf("can't create chatData: %+v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	if _, err := w.Write(chatData.ShortJSON()); err != nil {
-		h.logger.Errorf("can't write chat info: %+v", err)
+		h.logger.Errorf("can't write chatData info: %+v", err)
 		return
 	}
 }

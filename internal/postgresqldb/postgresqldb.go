@@ -100,9 +100,17 @@ func (p *PostgresStorage) GetUser(u *user.User) error {
 }
 
 func (p *PostgresStorage) CreateChat(c *chat.Chat) error {
+	users := c.Users
+	c.Users = nil
+	t := p.DB.Begin()
+	defer t.Rollback()
 	if err := p.DB.Create(c).Error; err != nil {
 		return errors.Wrapf(err, "can't create chat %+v", c)
 	}
+	if err := p.DB.Model(c).Association("users").Append(users).Error; err != nil {
+		return errors.Wrapf(err, "can't create chat %+v", c)
+	}
+	t.Commit()
 	return nil
 }
 
