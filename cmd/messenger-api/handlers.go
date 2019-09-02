@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/asciishell/avito-backend/internal/message"
+
 	"github.com/asciishell/avito-backend/internal/chat"
 	"github.com/asciishell/avito-backend/internal/postgresqldb"
 	"github.com/asciishell/avito-backend/internal/storage"
@@ -57,17 +59,18 @@ func (h Handler) CreateChat(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h Handler) CreateMessage(w http.ResponseWriter, r *http.Request) {
-	var chatData chat.Chat
-	if err := json.NewDecoder(r.Body).Decode(&chatData); err != nil {
+	var messageInfo message.CreationMessage
+	if err := json.NewDecoder(r.Body).Decode(&messageInfo); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if err := h.storage.CreateChat(&chatData); err != nil {
-		h.logger.Errorf("can't create chat: %+v", err)
+	messageData := messageInfo.Convert()
+	if err := h.storage.CreateMessage(&messageData); err != nil {
+		h.logger.Errorf("can't create message: %+v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if _, err := w.Write(chatData.ShortJSON()); err != nil {
+	if _, err := w.Write(messageData.ShortJSON()); err != nil {
 		h.logger.Errorf("can't write message info: %+v", err)
 		return
 	}

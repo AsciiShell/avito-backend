@@ -21,3 +21,17 @@ type Message struct {
 func (m Message) ShortJSON() []byte {
 	return []byte(fmt.Sprintf("{\"id\": %v}", m.ID))
 }
+
+type CreationMessage struct {
+	Chat   uint   `json:"chat"`
+	Author uint   `json:"author"`
+	Text   string `json:"text"`
+}
+
+func (c CreationMessage) Convert() Message {
+	return Message{
+		ChatID:   c.Chat,
+		AuthorID: c.Author,
+		Text:     c.Text,
+	}
+}
