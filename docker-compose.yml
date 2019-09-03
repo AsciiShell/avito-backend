@@ -1,7 +1,7 @@
 version: '3'
 services:
   messenger-api:
-    image: "asciishell/avito-backend:${IMAGE_TAG}"
+    image: "asciishell/messenger-api:${IMAGE_TAG}"
     env_file: docker.env
     ports:
       - "9000:9000"
