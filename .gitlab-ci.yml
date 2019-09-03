@@ -65,7 +65,6 @@ deploy:
     - make ci-deploy
   only:
     - master
-    - dev_docker
   except:
     - schedules
   tags: [docker]
