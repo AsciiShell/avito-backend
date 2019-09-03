@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/asciishell/avito-backend/internal/message"
@@ -23,6 +24,11 @@ func NewHandler(l log.Logger, s storage.Storage) *Handler {
 	return &h
 }
 
+func (h Handler) Write(w io.Writer, b []byte) {
+	if _, err := w.Write(b); err != nil {
+		h.logger.Errorf("can't write data: %+v", err)
+	}
+}
 func (h Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var userData user.User
 	if err := json.NewDecoder(r.Body).Decode(&userData); err != nil {
@@ -35,10 +41,7 @@ func (h Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := w.Write(userData.ShortJSON()); err != nil {
-		h.logger.Errorf("can't write user info: %+v", err)
-		return
-	}
+	h.Write(w, userData.ShortJSON())
 }
 func (h Handler) CreateChat(w http.ResponseWriter, r *http.Request) {
 	var chatInfo chat.CreationChat
@@ -53,10 +56,7 @@ func (h Handler) CreateChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := w.Write(chatData.ShortJSON()); err != nil {
-		h.logger.Errorf("can't write chatData info: %+v", err)
-		return
-	}
+	h.Write(w, chatData.ShortJSON())
 }
 func (h Handler) CreateMessage(w http.ResponseWriter, r *http.Request) {
 	var messageData message.Message
@@ -69,11 +69,10 @@ func (h Handler) CreateMessage(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if _, err := w.Write(messageData.ShortJSON()); err != nil {
-		h.logger.Errorf("can't write message info: %+v", err)
-		return
-	}
+	h.Write(w, messageData.ShortJSON())
 }
+
+//nolint:dupl
 func (h Handler) GetChats(w http.ResponseWriter, r *http.Request) {
 	var userInfo user.CreationUser
 	if err := json.NewDecoder(r.Body).Decode(&userInfo); err != nil {
@@ -82,14 +81,14 @@ func (h Handler) GetChats(w http.ResponseWriter, r *http.Request) {
 	}
 	userData := userInfo.Convert()
 	chats, err := h.storage.GetChatsFor(userData)
-	if err != nil {
-		switch err {
-		case postgresqldb.ErrNotFound:
-			w.WriteHeader(http.StatusNotFound)
-		default:
-			h.logger.Errorf("can't get chats for %v: %+v", userData, err)
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+	switch err {
+	case nil:
+	case postgresqldb.ErrNotFound:
+		w.WriteHeader(http.StatusNotFound)
+		return
+	default:
+		h.logger.Errorf("can't get chats for %v: %+v", userData, err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	err = json.NewEncoder(w).Encode(chats)
@@ -98,6 +97,8 @@ func (h Handler) GetChats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+//nolint:dupl
 func (h Handler) GetMessages(w http.ResponseWriter, r *http.Request) {
 	var chatInfo chat.CreationChat
 	if err := json.NewDecoder(r.Body).Decode(&chatInfo); err != nil {
@@ -106,14 +107,14 @@ func (h Handler) GetMessages(w http.ResponseWriter, r *http.Request) {
 	}
 	chatData := chatInfo.Convert()
 	messages, err := h.storage.GetMessages(chatData)
-	if err != nil {
-		switch err {
-		case postgresqldb.ErrNotFound:
-			w.WriteHeader(http.StatusNotFound)
-		default:
-			h.logger.Errorf("can't get messages for %v: %+v", chatData, err)
-			w.WriteHeader(http.StatusInternalServerError)
-		}
+	switch err {
+	case nil:
+	case postgresqldb.ErrNotFound:
+		w.WriteHeader(http.StatusNotFound)
+		return
+	default:
+		h.logger.Errorf("can't get messages for %v: %+v", chatData, err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	err = json.NewEncoder(w).Encode(messages)
