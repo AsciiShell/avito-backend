@@ -138,8 +138,9 @@ ORDER BY last_message DESC NULLS LAST
 }
 
 func (p *PostgresStorage) GetMessages(c chat.Chat) ([]message.Message, error) {
+	c.Users = nil
 	if err := p.DB.Where(c).First(&c).Error; err != nil {
-		return nil, errors.Wrapf(ErrNotFound, "can't find chat %v", c)
+		return nil, ErrNotFound
 	}
 	var result []message.Message
 	if err := p.DB.Raw(`SELECT *

@@ -59,12 +59,11 @@ func (h Handler) CreateChat(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h Handler) CreateMessage(w http.ResponseWriter, r *http.Request) {
-	var messageInfo message.CreationMessage
-	if err := json.NewDecoder(r.Body).Decode(&messageInfo); err != nil {
+	var messageData message.Message
+	if err := json.NewDecoder(r.Body).Decode(&messageData); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	messageData := messageInfo.Convert()
 	if err := h.storage.CreateMessage(&messageData); err != nil {
 		h.logger.Errorf("can't create message: %+v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -100,11 +99,12 @@ func (h Handler) GetChats(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func (h Handler) GetMessages(w http.ResponseWriter, r *http.Request) {
-	var chatData chat.Chat
-	if err := json.NewDecoder(r.Body).Decode(&chatData); err != nil {
+	var chatInfo chat.CreationChat
+	if err := json.NewDecoder(r.Body).Decode(&chatInfo); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	chatData := chatInfo.Convert()
 	messages, err := h.storage.GetMessages(chatData)
 	if err != nil {
 		switch err {

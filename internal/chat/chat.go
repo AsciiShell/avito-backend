@@ -19,6 +19,7 @@ func (c Chat) ShortJSON() []byte {
 }
 
 type CreationChat struct {
+	ID    uint   `json:"chat"`
 	Name  string `json:"name"`
 	Users []uint `json:"users"`
 }
@@ -29,6 +30,7 @@ func (c CreationChat) Convert() Chat {
 		users = append(users, user.User{ID: c.Users[i]})
 	}
 	return Chat{
+		ID:    c.ID,
 		Name:  c.Name,
 		Users: users,
 	}
