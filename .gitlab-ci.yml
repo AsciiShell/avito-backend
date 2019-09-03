@@ -1,5 +1,7 @@
 stages:
   - lint-and-test
+  - build
+  - deploy
 
 variables:
   # When using dind, it's wise to use the overlayfs driver for
