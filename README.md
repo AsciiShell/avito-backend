@@ -12,10 +12,18 @@
 
 `IMAGE_TAG=latest` Тег запуска 
 
-Запуск приложения:
+### Запуск приложения:
 
 ```bash
 IMAGE_TAG=latest docker-compose up -d
+```
+
+### Адреса для тестирования:
+
+```bash
+https://avito.asciishell.ru/
+
+http://asciishell.ru:9000/
 ```
 
 # Тестовое задание на позицию стажера-бекендера
