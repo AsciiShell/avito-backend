@@ -1,6 +1,8 @@
 package postgresqldb
 
 import (
+	"fmt"
+
 	"github.com/asciishell/avito-backend/internal/chat"
 	"github.com/asciishell/avito-backend/internal/message"
 	"github.com/asciishell/avito-backend/internal/user"
@@ -15,6 +17,8 @@ import (
 type PostgresStorage struct {
 	DB *gorm.DB
 }
+
+var ErrNotFound = errors.New("record not found")
 
 type DBCredential struct {
 	URL     string
@@ -44,11 +48,40 @@ func NewPostgresStorage(credential DBCredential) (*PostgresStorage, error) {
 	}
 	return &result, nil
 }
+func (p *PostgresStorage) constraintExists(table string, constraint string) bool {
+	return p.DB.Exec(`SELECT 1 FROM pg_catalog.pg_constraint con
+         INNER JOIN pg_catalog.pg_class rel ON rel.oid = con.conrelid
+WHERE rel.relname = ? AND con.conname = ?;`, table, constraint).RowsAffected == 1
+}
 
 func (p *PostgresStorage) Migrate() error {
-	if err := p.DB.AutoMigrate(user.User{}, chat.Chat{}, message.Message{}).Error; err != nil {
-		return errors.Wrapf(err, "can't migrate")
+	t := p.DB.Begin()
+	defer t.Rollback()
+	models := []interface{}{user.User{}, chat.Chat{}, message.Message{}}
+	for i := range models {
+		if !p.DB.HasTable(models[i]) {
+			if err := p.DB.AutoMigrate(models[i]).Error; err != nil {
+				return errors.Wrapf(err, "can't migrate")
+			}
+		}
 	}
+	type constrain struct {
+		Table string
+		Name  string
+		Rule  string
+	}
+	constraints := []constrain{
+		{Table: "user_chats", Name: "user_chats_chat_id_fkey", Rule: "FOREIGN KEY (chat_id) REFERENCES chats ON DELETE RESTRICT"},
+		{Table: "user_chats", Name: "user_chats_user_id_fkey", Rule: "FOREIGN KEY (user_id) REFERENCES users ON DELETE RESTRICT"},
+	}
+	for _, v := range constraints {
+		if !p.constraintExists(v.Table, v.Name) {
+			if err := p.DB.Exec(fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT  %s %s", v.Table, v.Name, v.Rule)).Error; err != nil {
+				return errors.Wrapf(err, "can't apply constraint %s", v.Name)
+			}
+		}
+	}
+	t.Commit()
 	return nil
 }
 
@@ -67,9 +100,17 @@ func (p *PostgresStorage) GetUser(u *user.User) error {
 }
 
 func (p *PostgresStorage) CreateChat(c *chat.Chat) error {
+	users := c.Users
+	c.Users = nil
+	t := p.DB.Begin()
+	defer t.Rollback()
 	if err := p.DB.Create(c).Error; err != nil {
 		return errors.Wrapf(err, "can't create chat %+v", c)
 	}
+	if err := p.DB.Model(c).Association("users").Append(users).Error; err != nil {
+		return errors.Wrapf(err, "can't create chat %+v", c)
+	}
+	t.Commit()
 	return nil
 }
 
@@ -81,12 +122,15 @@ func (p *PostgresStorage) CreateMessage(m *message.Message) error {
 }
 
 func (p *PostgresStorage) GetChatsFor(u user.User) ([]chat.Chat, error) {
+	if err := p.DB.Where(u).First(&u).Error; err != nil {
+		return nil, ErrNotFound
+	}
 	var result []chat.Chat
 	if err := p.DB.Raw(`SELECT chats.id, chats.name, chats.created_at, (SELECT MAX(created_at) FROM messages WHERE messages.chat_id = chats.id) as last_message
 FROM chats
          JOIN user_chats uc on chats.id = uc.chat_id
 WHERE uc.user_id = ?
-ORDER BY last_message DESC 
+ORDER BY last_message DESC NULLS LAST
 `, u.ID).Scan(&result).Error; err != nil {
 		return nil, errors.Wrapf(err, "can't get chats for user id %v", u.ID)
 	}
@@ -94,8 +138,11 @@ ORDER BY last_message DESC
 }
 
 func (p *PostgresStorage) GetMessages(c chat.Chat) ([]message.Message, error) {
+	c.Users = nil
+	if err := p.DB.Where(c).First(&c).Error; err != nil {
+		return nil, ErrNotFound
+	}
 	var result []message.Message
-
 	if err := p.DB.Raw(`SELECT *
 FROM messages
 WHERE chat_id = ?
