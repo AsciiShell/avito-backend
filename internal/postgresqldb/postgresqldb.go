@@ -134,6 +134,11 @@ ORDER BY last_message DESC NULLS LAST
 `, u.ID).Scan(&result).Error; err != nil {
 		return nil, errors.Wrapf(err, "can't get chats for user id %v", u.ID)
 	}
+	for i := range result {
+		if err := p.DB.Model(&result[i]).Related(&result[i].Users, "users").Error; err != nil {
+			return nil, errors.Wrapf(err, "can't get chat users")
+		}
+	}
 	return result, nil
 }
 

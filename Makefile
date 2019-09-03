@@ -19,7 +19,7 @@ DOCKER_BUILDER_IMAGE := golang:1.12
 
 DOCKER_IMAGE_SPACE ?= asciishell
 ifeq ($(BRANCH), master)
-	 DOCKER_IMAGE_TAG = $(BRANCH)
+	 DOCKER_IMAGE_TAG = latest
 else
 	DOCKER_IMAGE_TAG = $(BRANCH)_$(VERSION)
 endif
